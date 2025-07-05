@@ -22,17 +22,14 @@ const db = knex({
 
 const wbService = new WBService();
 const googleService = new GoogleSheetsService(
-    JSON.parse(process.env.GOOGLE_CREDENTIALS || '{}'),
-    JSON.parse(process.env.GOOGLE_TOKEN || '{}')
+    JSON.parse(process.env.GOOGLE_CREDENTIALS || '{}')
 );
 const dbService = new DBService(db);
 
 async function updateTariffs(): Promise<void> {
     try {
         const tariffs = await wbService.getTariffs();
-        
         await dbService.saveTariffs(tariffs);
-
         console.log('Тарифы успешно обновлены');
     } catch (error) {
         console.error('Ошибка при обновлении тарифов:', error);
@@ -42,7 +39,6 @@ async function updateTariffs(): Promise<void> {
 async function updateGoogleSheets(): Promise<void> {
     try {
         const sheets = await dbService.getActiveGoogleSheets();
-        
         const tariffs = await dbService.getTariffsByDate(new Date());
 
         const sheetData: GoogleSheetData[] = tariffs.map(t => ({
@@ -66,12 +62,34 @@ async function updateGoogleSheets(): Promise<void> {
     }
 }
 
-schedule('0 * * * *', updateTariffs);
-schedule('*/15 * * * *', updateGoogleSheets);
+function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-updateTariffs().catch(console.error);
+async function init() {
+    try {
+        console.log('Инициализация сервиса...');
+        
+        console.log('Ожидание готовности базы данных...');
+        await sleep(5000);
+        
+        await updateTariffs();
+        await updateGoogleSheets();
+        
+        schedule('0 * * * *', updateTariffs);
+        schedule('*/15 * * * *', updateGoogleSheets);
+        
+        console.log('Сервис запущен');
+    } catch (error) {
+        console.error('Ошибка при инициализации:', error);
+        process.exit(1);
+    }
+}
 
-console.log('Сервис запущен');
+init().catch(error => {
+    console.error('Критическая ошибка:', error);
+    process.exit(1);
+});
 
 process.on('SIGTERM', async () => {
     console.log('Завершение работы...');

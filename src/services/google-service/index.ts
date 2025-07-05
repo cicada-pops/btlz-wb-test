@@ -5,12 +5,17 @@ export class GoogleSheetsService {
     private readonly auth;
     private readonly sheets;
 
-    constructor(credentials: any, token: any) {
-        this.auth = new google.auth.GoogleAuth({
-            credentials,
-            scopes: ['https://www.googleapis.com/auth/spreadsheets']
-        });
-        this.sheets = google.sheets({ version: 'v4', auth: this.auth });
+    constructor(credentials: any) {
+        try {
+            this.auth = new google.auth.GoogleAuth({
+                credentials,
+                scopes: ['https://www.googleapis.com/auth/spreadsheets']
+            });
+            this.sheets = google.sheets({ version: 'v4', auth: this.auth });
+        } catch (error) {
+            console.error('Ошибка при инициализации Google Sheets сервиса:', error);
+            throw error;
+        }
     }
 
     async updateSheet(config: GoogleSheetConfig, data: GoogleSheetData[]): Promise<void> {
@@ -38,29 +43,31 @@ export class GoogleSheetsService {
                 }
             });
 
-            await this.sheets.spreadsheets.batchUpdate({
-                spreadsheetId: config.sheet_id,
-                requestBody: {
-                    requests: [{
-                        sortRange: {
-                            range: {
-                                sheetId: 0,
-                                startRowIndex: 1,
-                                startColumnIndex: 0,
-                                endColumnIndex: 4
-                            },
-                            sortSpecs: [{
-                                dimensionIndex: 3,
-                                sortOrder: 'ASCENDING'
-                            }]
-                        }
-                    }]
-                }
-            });
-        } catch (error) {
-            if (error instanceof Error) {
-                throw new Error(`Failed to update Google Sheet: ${error.message}`);
+            try {
+                await this.sheets.spreadsheets.batchUpdate({
+                    spreadsheetId: config.sheet_id,
+                    requestBody: {
+                        requests: [{
+                            sortRange: {
+                                range: {
+                                    sheetId: 0,
+                                    startRowIndex: 1,
+                                    startColumnIndex: 0,
+                                    endColumnIndex: 4
+                                },
+                                sortSpecs: [{
+                                    dimensionIndex: 3,
+                                    sortOrder: 'ASCENDING'
+                                }]
+                            }
+                        }]
+                    }
+                });
+            } catch (sortError) {
+                console.warn('Не удалось отсортировать данные:', sortError);
             }
+        } catch (error) {
+            console.error(`Ошибка при обновлении таблицы ${config.name}:`, error);
             throw error;
         }
     }
