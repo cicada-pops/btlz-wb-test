@@ -1,70 +1,31 @@
-import env from "#config/env/env.js";
-import { Knex } from "knex";
-import { z } from "zod";
+import { Knex } from 'knex';
+import { config } from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
-const connectionSchema = z.object({
-    host: z.string(),
-    port: z.number(),
-    database: z.string(),
-    user: z.string(),
-    password: z.string(),
-});
+// Загружаем переменные окружения
+config();
 
-const NODE_ENV = env.NODE_ENV ?? "development";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-const knegConfigs: Record<typeof NODE_ENV, Knex.Config> = {
-    development: {
-        client: "pg",
-        connection: () =>
-            connectionSchema.parse({
-                host: env.POSTGRES_HOST ?? "localhost",
-                port: env.POSTGRES_PORT ?? 5432,
-                database: env.POSTGRES_DB ?? "postgres",
-                user: env.POSTGRES_USER ?? "postgres",
-                password: env.POSTGRES_PASSWORD ?? "postgres",
-            }),
-        pool: {
-            min: 2,
-            max: 10,
-        },
-        migrations: {
-            stub: 'src/config/knex/migration.stub.js',
-            directory: "./src/postgres/migrations",
-            tableName: "migrations",
-            extension: "ts",
-        },
-        seeds: {
-            stub: 'src/config/knex/seed.stub.js',
-            directory: "./src/postgres/seeds",
-            extension: "js",
-        },
+const knexConfig: Knex.Config = {
+    client: 'pg',
+    connection: {
+        host: process.env.POSTGRES_HOST || 'localhost',
+        port: Number(process.env.POSTGRES_PORT) || 5432,
+        database: process.env.POSTGRES_DB,
+        user: process.env.POSTGRES_USER,
+        password: process.env.POSTGRES_PASSWORD
     },
-    production: {
-        client: "pg",
-        connection: () =>
-            connectionSchema.parse({
-                host: env.POSTGRES_HOST,
-                port: env.POSTGRES_PORT,
-                database: env.POSTGRES_DB,
-                user: env.POSTGRES_USER,
-                password: env.POSTGRES_PASSWORD,
-            }),
-        pool: {
-            min: 2,
-            max: 10,
-        },
-        migrations: {
-            stub: 'dist/config/knex/migration.stub.js',
-            directory: "./dist/postgres/migrations",
-            tableName: "migrations",
-            extension: "js",
-        },
-        seeds: {
-            stub: 'src/config/knex/seed.stub.js',
-            directory: "./dist/postgres/seeds",
-            extension: "js",
-        },
+    migrations: {
+        directory: join(__dirname, '../../postgres/migrations'),
+        tableName: 'knex_migrations'
     },
+    pool: {
+        min: 2,
+        max: 10
+    }
 };
 
-export default knegConfigs[NODE_ENV];
+export default knexConfig;

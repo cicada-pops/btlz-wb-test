@@ -8,16 +8,17 @@
         "dev": "nodemon --watch src --ext ts --exec tsx src/app.ts",
         "watch:build": "tsc --build --force --verbose --watch",
         "knex:dev": "tsx src/utils/knex.ts",
-
         "build": "tsc --allowJs",
         "start": "node dist/app.js",
         "knex": "node dist/utils/knex.js",
-        
         "tsc:check": "tsc --allowJs --noEmit",
         "prettier": "prettier --config .prettierrc.json src/**/*.js --check",
         "prettier-format": "prettier --config .prettierrc.json src/**/*.js --write",
         "eslint": "eslint",
-        "eslint-fix": "eslint --fix"
+        "eslint-fix": "eslint --fix",
+        "migrate": "knex migrate:latest --esm --knexfile dist/config/knex/knexfile.js",
+        "migrate:rollback": "knex migrate:rollback --esm --knexfile dist/config/knex/knexfile.js",
+        "add-sheet": "node dist/scripts/add-google-sheet.js"
     },
     "imports": {
         "#*": [
@@ -31,11 +32,14 @@
     "author": "lucard17",
     "license": "ISC",
     "dependencies": {
+        "@types/node-cron": "^3.0.11",
+        "axios": "^1.10.0",
         "commander": "^13.1.0",
         "dotenv": "^16.3.1",
         "googleapis": "^144.0.0",
         "knex": "^3.0.1",
         "log4js": "^6.9.1",
+        "node-cron": "^4.2.0",
         "pg": "^8.11.3",
         "zod": "^3.23.8"
     },
@@ -43,7 +47,7 @@
         "@babel/core": "^7.23.6",
         "@babel/preset-env": "^7.23.6",
         "@babel/preset-typescript": "^7.24.7",
-        "@types/axios": "^0.14.0",
+        "@types/axios": "^0.14.4",
         "@types/bcrypt": "^5.0.2",
         "@types/cookie-parser": "^1.4.8",
         "@types/cors": "^2.8.17",
@@ -65,6 +69,8 @@
         "nodemon": "^3.0.2",
         "prettier": "^3.3.3",
         "prettier-plugin-jsdoc": "^1.3.0",
-        "typescript": "^5.7.3"
+        "typescript": "^5.7.3",
+        "@types/node": "^20.11.30",
+        "ts-node": "^10.9.2"
     }
 }

@@ -1,54 +1,86 @@
-# Шаблон для выполнения тестового задания
+# WB Tariffs Service
 
-## Описание
-Шаблон подготовлен для того, чтобы попробовать сократить трудоемкость выполнения тестового задания.
+Сервис для получения тарифов Wildberries и их экспорта в Google Sheets.
 
-В шаблоне настоены контейнеры для `postgres` и приложения на `nodejs`.  
-Для взаимодействия с БД используется `knex.js`.  
-В контейнере `app` используется `build` для приложения на `ts`, но можно использовать и `js`.
+## Функциональность
 
-Шаблон не является обязательным!\
-Можно использовать как есть или изменять на свой вкус.
+- Ежечасное получение тарифов через API Wildberries
+- Сохранение тарифов в PostgreSQL
+- Автоматическое обновление Google таблиц каждые 15 минут
+- Автоматическое подключение к Google таблице (согласно требованию: "Само приложение должно запускаться одной командной docker compose up и не требовать никаких дополнительных манипуляций.")
 
-Все настройки можно найти в файлах:
-- compose.yaml
-- dockerfile
-- package.json
-- tsconfig.json
-- src/config/env/env.ts
-- src/config/knex/knexfile.ts
+## Требования
 
-## Команды:
+- Docker и Docker Compose
+- API ключ Wildberries
+- Сервисный аккаунт Google с доступом к Google Sheets API
 
-Запуск базы данных:
-```bash
-docker compose up -d --build postgres
-```
+## Быстрый старт
 
-Для выполнения миграций и сидов не из контейнера:
-```bash
-npm run knex:dev migrate latest
-```
+1. Склонируйте репозиторий:
 
 ```bash
-npm run knex:dev seed run
+git clone https://github.com/cicada-pops/btlz-wb-test
+cd btlz-wb-test
 ```
-Также можно использовать и остальные команды (`migrate make <name>`,`migrate up`, `migrate down` и т.д.)
 
-Для запуска приложения в режиме разработки:
+2. Скопируйте пример конфигурации:
+
 ```bash
-npm run dev
+cp .env.example .env
 ```
 
-Запуск проверки самого приложения:
+3. Заполните `.env` файл:
+
+- Добавьте ваш API ключ Wildberries в `WB_API_KEY`
+- Добавьте учетные данные сервисного аккаунта Google в `GOOGLE_CREDENTIALS` (данные для теста отправлены на hh)
+
+4. Запустите приложение:
+
 ```bash
-docker compose up -d --build app
+docker compose up
 ```
 
-Для финальной проверки рекомендую:
+## Проверка работоспособности
+
+1. Проверка логов:
+
+```bash
+docker logs app -f
+```
+
+Вы должны увидеть сообщения:
+
+- "Сервис запущен"
+- "Тарифы успешно обновлены" (каждый час)
+- "Таблица Тарифы WB успешно обновлена" (каждые 15 минут)
+
+2. Проверка базы данных:
+
+```bash
+docker exec postgres psql -U postgres -d postgres -c "SELECT date, warehouse_id, delivery_base, delivery_liter, storage_base, storage_liter FROM tariffs ORDER BY date DESC LIMIT 5;"
+```
+
+3. Глобальная очистка
+
 ```bash
 docker compose down --rmi local --volumes
-docker compose up --build
 ```
 
-PS: С наилучшими пожеланиями!
+## Структура данных
+
+### Тарифы
+
+- `date` - дата тарифа
+- `warehouse_id` - идентификатор склада
+- `delivery_base` - базовый тариф доставки
+- `delivery_liter` - тариф доставки за литр
+- `storage_base` - базовый тариф хранения
+- `storage_liter` - тариф хранения за литр
+
+### Google таблица
+
+- Дата
+- Склад
+- Тип доставки (delivery_base / delivery_liter)
+- Коэффициент (storage_base + storage_liter)
